@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 
 # imports, project
-from project_metadata import project_name
+from metadata import project_name
 
 
 def read_config(path_to_config='') -> dict:
