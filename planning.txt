@@ -1,0 +1,58 @@
+A place to plan out project structure in attempt to  head-off refactoring
+
+DATA CLONER DISPATCHER HIERARCHY
+cloner_manager
+    data_cloner
+
+CLONER MANAGER, generic container for cloners
+what should it do?
+    launch the cloners
+    manage the cache
+    throttle transfers? or should this be done by individual cloners?
+
+DATA CLONER
+remote_specific_cloner, for example google_drive_cloner
+    attributes
+        memory_data_rate, a throttling mechanism in bytes/second
+    functions
+        download, fetch remote files
+        upload, no plans to implement upload as use-case is currently fetching
+
+PLANNED FEATURES
+authenticate with cloner remote sources via environment variables
+cache data between runs in a compressed json
+
+PROGRAM FLOW
+1. read local configuration & environment variables
+    read config works, DONE
+    read dotenv works, DONE
+2. main module instantiates cloner manager class with config
+    cloner manager loads previous run's cache
+    cloner manager performs check to see which cloners to instantiate
+    cloner manager deploys the cloners asynchronously
+    cloner manager manages the returned data
+    cloner manager creates a cache of cloner metadata as it runs
+    cloner manager waits until all cloners are finished running
+    cloner manager records timestamp
+    cloner manager writes cache to disk and exits
+3. runtime ends
+
+PROJECT STRUCTURE
+config, yaml configuration for project
+env, the virtual environment created by something like python3 -m venv ./env at root of project
+src
+    managers,
+        cloner_manager.ClonerManager, manager of all data cloners
+    cloners, individual data cloners
+        remote_specific_cloner.RemoteSpecificCloner
+    config_reader
+        read_config, module to read the yaml config
+test
+    test_config_reader
+    test_remote_specific_cloner
+    test_remote_specific_cloner_authenticate
+    test_remote_specific_cloner_download
+.gitignore
+credentials.json, required by googledrive pypi package
+planning.txt, this file
+requirements.txt, pip's requirements
