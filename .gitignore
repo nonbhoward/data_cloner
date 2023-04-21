@@ -1,7 +1,9 @@
 # file
 credentials.json
+token.json
 
 # folder
+__pycache__
 env
 .idea
 
