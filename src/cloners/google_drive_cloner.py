@@ -14,14 +14,21 @@ SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 class GoogleDriveDataCloner:
     # Class attributes
+    _ACTIVE = True
     _NAME = 'GoogleDrive'
     _SECRETS = 'credentials.json'
     _TOKEN = 'token.json'
 
     def __init__(self):
-        # Constants
-        # Initial actions
         self.authenticate()
+
+    @property
+    def active(self):
+        return self._ACTIVE
+
+    @active.setter
+    def active(self, value):
+        print(f"Do not set this attribute, discarding value : {value}")
 
     def authenticate(self):
         """Basic auth using the Drive v3 API."""
@@ -29,7 +36,6 @@ class GoogleDriveDataCloner:
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
-        cwd = os.getcwd()  # TODO delete me
         if os.path.exists(self._TOKEN):
             creds = Credentials.from_authorized_user_file(self._TOKEN, SCOPES)
         # If there are no (valid) credentials available, let the user log in.
@@ -46,9 +52,11 @@ class GoogleDriveDataCloner:
 
         service = build('drive', 'v3', credentials=creds)
 
+        # TODO convert and delete below
         results = service.files().list(
             pageSize=10, fields="nextPageToken, files(id, name)").execute()
         items = results.get('files', [])
+        # TODO convert and delete above
 
     def cache_create_new(self):
         pass
@@ -61,3 +69,11 @@ class GoogleDriveDataCloner:
 
     def download(self):
         pass
+
+    @property
+    def name(self):
+        return self._NAME
+
+    @name.setter
+    def name(self, value):
+        print(f"Do not set this attribute, discarding value : {value}")
