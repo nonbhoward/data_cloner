@@ -1,2 +1,6 @@
 # imports, project
-from src import main
+from src.main import main
+
+
+def test_main():
+    main()

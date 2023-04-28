@@ -1,6 +1,7 @@
 """Bare minimum example for a new cloner
 
 In order to add a new cloner :
+    # TODO update this after the cloner finder is passing tests
     1. Create a new class
     2. Set cls._ACTIVE attribute to True
     3. Set cls._NAME attribute to some string
