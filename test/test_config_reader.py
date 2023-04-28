@@ -34,6 +34,10 @@ def test_read_config():
     with pytest.raises(Exception):
         read_config(path_to_config='/a/b/c/d/e')
 
+    # Test raises exception with bad path
+    with pytest.raises(Exception):
+        read_config(path_to_config='/a/b/c/d/e')
+
 
 def test_read_dotenv():
     # Test function return
