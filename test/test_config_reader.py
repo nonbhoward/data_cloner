@@ -24,27 +24,32 @@ def test_read_config():
     assert isinstance(config, dict), "Returned config is not dict."
 
     # Test for expected keys
-    key = 'path'
-    assert key in config, f"Missing key {key}"
+    parent_key = 'paths'
+    assert parent_key in config, f"Missing dict key : {parent_key}"
     # Test for expected keys in 'path' sub-dict
-    key = 'content_root'
-    assert key in config['path'], f"Missing path key {key}"
+    child_key = 'content_root'
+    assert child_key in config[parent_key], f"Missing dict child_key : {child_key}"
 
     # Test raises exception with bad path
     with pytest.raises(Exception):
         read_config(path_to_config='/a/b/c/d/e')
 
-    # Test raises exception with bad path
-    with pytest.raises(Exception):
-        read_config(path_to_config='/a/b/c/d/e')
 
-
-def test_read_dotenv():
+def test_add_dotenv_to_config():
     # Test function return
-    dotenv = read_dotenv()
-    assert dotenv, f"Function {read_dotenv.__name__} returned nothing."
+
+    # Declare required mock variables
+    mock_conf = {'names': {
+        'project': 'data_cloner'
+    }}
+
+    dotenv = add_dotenv_to_config(config=mock_conf)
+    assert dotenv, f"Function \'{add_dotenv_to_config.__name__}\' returned " \
+                   f"nothing."
     assert isinstance(dotenv, dict), "Returned config is not dict."
 
-    # Test raises exception with bad path
+    # Test raises exception with bad filename
+    mock_conf = {}
     with pytest.raises(Exception):
-        read_dotenv(dotenv_filename='abcdefghijklmnopqrstuvwxyz')
+        add_dotenv_to_config(dotenv_filename='abcdefghijklmnopqrstuvwxyz',
+                             config=mock_conf)

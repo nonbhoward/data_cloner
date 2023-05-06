@@ -2,13 +2,9 @@
 
 # imports, python
 import inspect
-import os
 
 # imports, third-party
 from pathlib import Path
-
-# imports, project
-from src import cloners
 
 
 class ClonerManager:
@@ -90,7 +86,12 @@ def collect_cloners(content_root: Path) -> list:
     :return: a list of cloner objects
     """
     # Extract all classes from cloners
-    cloner_objects = inspect.getmembers(cloners)
+    # 1. Collect python modules that are not __init__
+    # 2. Per module, inspect and identify classes
+    # 3. Per found class, eliminate those not pre-listed as cloners
+    # 4. Attempt instantiation of each cloner class
+    path_to_cloners = Path(content_root, 'src', 'cloners')
+    cloner_objects = inspect.getmembers(path_to_cloners)
     classes = []
     for name, obj in cloner_objects:
         if inspect.isclass(obj):
