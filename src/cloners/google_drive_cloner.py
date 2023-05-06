@@ -55,7 +55,6 @@ class GoogleDriveCloner:
         results = service.files().list(
             pageSize=10, fields="nextPageToken, files(id, name)").execute()
         items = results.get('files', [])
-        # TODO convert and delete above
 
     def cache_create_new(self):
         pass

@@ -5,6 +5,7 @@ from os import getcwd
 from pathlib import Path
 
 
+# TODO should this be relocated?
 default_project_name = 'data_cloner'
 
 

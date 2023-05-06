@@ -18,14 +18,14 @@ from src.util.util import find_content_root
 #   navigation.
 default_project_name = 'data_cloner'
 
+# Error messages
+# TODO there is a lot of repetition in the use of these values,
+#   think about how this could be reduced
+setter_message_no_value = f"No value passed to setter"
+setter_message_bad_type = f"Bad type for setter"
+
 
 class ConfigManager:
-    # Error messages
-    # TODO there is a lot of repetition in the use of these values,
-    #   think about how this could be reduced
-    setter_message_no_value = f"No value passed to setter"
-    setter_message_bad_type = f"Bad type for setter"
-
     def __init__(self, path_to_config='', project_name=''):
         pass
         self._config = self.read_config(path_to_config=path_to_config,
@@ -77,8 +77,7 @@ class ConfigManager:
 
     @config.setter
     def config(self, value):
-        assert value, self.setter_message_no_value
-        assert isinstance(value, dict), self.setter_message_bad_type
+        validate_setter_value(value=value, type_requirement=dict)
         self._config = value
 
     @property
@@ -87,8 +86,7 @@ class ConfigManager:
 
     @content_root.setter
     def content_root(self, value):
-        assert value, self.setter_message_no_value
-        assert isinstance(value, Path), self.setter_message_bad_type
+        validate_setter_value(value=value, type_requirement=Path)
         self._config['paths']['content_root'] = value
 
     @property
@@ -98,9 +96,8 @@ class ConfigManager:
 
     @enabled_cloners.setter
     def enabled_cloners(self, value: list):
-        """Same description as parent property"""
-        assert value, self.setter_message_no_value
-        assert isinstance(value, list), self.setter_message_bad_type
+        """Same description as property"""
+        validate_setter_value(value=value, type_requirement=list)
         self._config['enabled_cloners'] = value
 
 
@@ -121,6 +118,8 @@ def add_dotenv_to_config(config, dotenv_filename='.env') -> dict:
         dotenv_lines = env_r.readlines()
 
     # Locate the dotenv line for this project
+    # TODO would be nice if this direct assignment could be moved to the
+    #   config manager
     project_name = config['names']['project']
     project_dotenv_line = None
     for dotenv_line in dotenv_lines:
@@ -147,3 +146,8 @@ def add_dotenv_to_config(config, dotenv_filename='.env') -> dict:
     })
 
     return dotenv
+
+
+def validate_setter_value(value, type_requirement: type):
+    assert value, setter_message_no_value
+    assert isinstance(value, type_requirement), setter_message_bad_type
