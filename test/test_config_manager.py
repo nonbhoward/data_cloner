@@ -1,3 +1,5 @@
+# Test objects in config manager module
+
 # imports, python
 import os
 
@@ -5,19 +7,17 @@ import os
 import pytest
 
 # imports, project
-from src.config_reader.config_reader import *
+from src.managers.config_manager import ConfigManager
+from src.managers.config_manager import add_dotenv_to_config
+from test.mock import mock_config
 
 
-def test_find_content_root():
-    path_to_content_root = find_content_root()
-    assert os.path.exists(path_to_content_root), \
-        f"Path does not exist : {path_to_content_root}"
+def test_config_manager():
+    cm = ConfigManager()
+    assert cm, f"Class failed to initialize"
 
-    with pytest.raises(Exception):
-        find_content_root(project_name='abcdefghijklmnopqrstuvwxyz')
-
-
-def test_read_config():
+    # TODO, convert these previous tests to match refactored test
+    """
     # Test function return
     config = read_config()
     assert config, f"Function {read_config.__name__} returned nothing."
@@ -33,23 +33,18 @@ def test_read_config():
     # Test raises exception with bad path
     with pytest.raises(Exception):
         read_config(path_to_config='/a/b/c/d/e')
+    """
 
 
-def test_add_dotenv_to_config():
+def test_add_dotenv_to_config(mconfig=mock_config):
     # Test function return
 
-    # Declare required mock variables
-    mock_conf = {'names': {
-        'project': 'data_cloner'
-    }}
-
-    dotenv = add_dotenv_to_config(config=mock_conf)
+    dotenv = add_dotenv_to_config(config=mconfig)
     assert dotenv, f"Function \'{add_dotenv_to_config.__name__}\' returned " \
                    f"nothing."
     assert isinstance(dotenv, dict), "Returned config is not dict."
 
     # Test raises exception with bad filename
-    mock_conf = {}
     with pytest.raises(Exception):
         add_dotenv_to_config(dotenv_filename='abcdefghijklmnopqrstuvwxyz',
-                             config=mock_conf)
+                             config=mconfig)

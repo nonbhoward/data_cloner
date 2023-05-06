@@ -1,29 +1,35 @@
 # Handles management related to data cloners.
 
 # imports, python
+import importlib.machinery
 import inspect
+import os
 
 # imports, third-party
 from pathlib import Path
 
+# imports, project
+from src.managers.config_manager import ConfigManager
+
 
 class ClonerManager:
-    def __init__(self, config: dict):
+    def __init__(self, config_manager: ConfigManager):
         self._cloners_active = False
 
         # Assign args to class
-        self._config = config
+        self._config_manager = config_manager
 
         # Init non-arg values
         self._cloners = []
 
         # Search local imports for enabled cloners
         # Initialize the enabled cloners
-        enabled_cloners = self.config['enabled_cloners']
+        enabled_cloners = self._config_manager.enabled_cloners
 
         # Collect imported objects for iteration
-        content_root = config['paths']['content_root']
-        data_cloners = collect_cloners(content_root=content_root)
+        content_root = self._config_manager.content_root
+        data_cloners = collect_cloners(content_root=content_root,
+                                       enabled_cloners=enabled_cloners)
 
         for cloner_name, cloner_cls in data_cloners:
             if not cloner_cls:
@@ -79,23 +85,65 @@ class ClonerManager:
             cloner.run()
 
 
-def collect_cloners(content_root: Path) -> list:
+def collect_cloners(content_root: Path,
+                    enabled_cloners: list) -> list:
     """Browse imported objects, inspect them, and return a list of the
         ones that meet the requirements for a cloner.
 
     :return: a list of cloner objects
     """
-    # Extract all classes from cloners
-    # 1. Collect python modules that are not __init__
-    # 2. Per module, inspect and identify classes
-    # 3. Per found class, eliminate those not pre-listed as cloners
-    # 4. Attempt instantiation of each cloner class
+    # 0. Declare cloners location
     path_to_cloners = Path(content_root, 'src', 'cloners')
-    cloner_objects = inspect.getmembers(path_to_cloners)
-    classes = []
-    for name, obj in cloner_objects:
-        if inspect.isclass(obj):
-            classes.append(obj)
-        pass
 
-    return []
+    # 1. Collect python modules that are not __init__
+    py_modules = []
+    for root, _, files in os.walk(path_to_cloners):
+        for file in files:
+            if not file.endswith('.py'):
+                continue  # Skip non-python files
+
+            if '__init__' in file:
+                continue  # Skip __init__
+
+            py_modules.append(Path(root, file))
+
+    # 2. Per module, inspect and identify classes
+    found_classes = []
+    for py_module in py_modules:
+        name = py_module.name.split('.')[0]
+        mpath = str(py_module)
+        module = importlib.machinery.SourceFileLoader(
+            fullname=name,
+            path=mpath
+        )
+        loaded_module = module.load_module()
+        py_members = inspect.getmembers(object=loaded_module)
+
+        # 2a. Eliminate non-class members
+        for py_member in py_members:
+            py_member_name = py_member[0]
+            py_member_val = py_member[1]
+            if not inspect.isclass(py_member_val):
+                continue
+            found_classes.append(py_member)
+
+    # 3. Per found class, eliminate those not pre-listed as cloners
+    cloner_classes = []
+    for found_class in found_classes:
+
+        if not is_cloner(f_class=found_class,
+                         e_cloners=enabled_cloners):
+            continue  # Skip non-cloner classes
+
+        cloner_classes.append(found_class)
+
+    # 4. Return object containing each cloner class
+    return cloner_classes
+
+
+def is_cloner(f_class: tuple,
+              e_cloners: list) -> bool:
+    key, val = f_class[0], f_class[1]
+    if key not in e_cloners:
+        return False
+    return True

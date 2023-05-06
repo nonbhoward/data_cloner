@@ -1,11 +1,11 @@
 # imports, project
-from src.config_reader.config_reader import read_config
 from src.managers.cloner_manager import ClonerManager
+from src.managers.config_manager import ConfigManager
 
 
 def main():
-    config = read_config()
-    cm = ClonerManager(config=config)
+    config_manager = ConfigManager()
+    cm = ClonerManager(config_manager=config_manager)
     while cm.cloners_active:
         cm.run()
 
