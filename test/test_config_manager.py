@@ -16,11 +16,9 @@ def test_config_manager():
     cm = ConfigManager()
     assert cm, f"Class failed to initialize"
 
-    # TODO, convert these previous tests to match refactored test
-    """
     # Test function return
-    config = read_config()
-    assert config, f"Function {read_config.__name__} returned nothing."
+    config = cm.read_config()
+    assert config, f"Class function {cm.read_config.__name__} returned nothing."
     assert isinstance(config, dict), "Returned config is not dict."
 
     # Test for expected keys
@@ -32,8 +30,7 @@ def test_config_manager():
 
     # Test raises exception with bad path
     with pytest.raises(Exception):
-        read_config(path_to_config='/a/b/c/d/e')
-    """
+        cm.read_config(path_to_config='/a/b/c/d/e')
 
 
 def test_add_dotenv_to_config(mconfig=mock_config):

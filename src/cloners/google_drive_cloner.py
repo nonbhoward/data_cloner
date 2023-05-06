@@ -19,7 +19,7 @@ class GoogleDriveCloner:
     _TOKEN = 'token.json'
 
     def __init__(self):
-        self.authenticate()
+        pass
 
     @property
     def active(self):
