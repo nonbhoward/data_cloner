@@ -1,24 +1,26 @@
-A place to plan out project structure in attempt to  head-off refactoring
+A central place to plan project structure in attempt to head-off misunderstandings
 
-DATA CLONER DISPATCHER HIERARCHY
+EXECUTION HIERARCHY
 run -> src.main.py
-  cloner_manager
-    data_cloner
+  cloner_manager, the central object of the program
+    data_cloner(s)
+  config_manager (accessible via cloner_manager)
 
-CLONER MANAGER, generic container for cloners
-what should it do?
-    launch the cloners
-    manage the cache
-    throttle transfers?
-      what else could do this job?
-
-DATA CLONER
-remote_specific_cloner, for example google_drive_cloner
-    attributes
-        memory_data_rate, a throttling mechanism in bytes/second
-    functions
-        download, fetch remote files
-        upload, no plans to implement upload as use-case is currently fetching
+OBJECTS
+    CLONER MANAGER, generic container for cloners
+    what should it do?
+        launch the cloners
+        manage the cache
+        throttle transfers?
+          what else could do this job?
+    CONFIG MANAGER, object to avoid having to manually modify config dict
+    DATA CLONER
+    remote_specific_cloner, for example google_drive_cloner
+        attributes
+            memory_data_rate, a throttling mechanism in bytes/second
+        functions
+            download, fetch remote files
+            upload, no plans to implement upload as use-case is currently fetching
 
 PLANNED FEATURES
 authenticate with multiple remotes
@@ -30,7 +32,8 @@ PROGRAM FLOW
     read config works, DONE
     read dotenv works, DONE
 2. main module instantiates cloner manager class with config
-    cloner manager (cm) instantiates cloners that need to run
+    cloner manager (cm) locates and dynamically imports cloners, DONE
+    cm instantiates cloners that need to run
     cm checks that there are cloners that are ready to run
     cm loads previous run's cache
     cm performs check to see which cloners to instantiate
@@ -43,28 +46,30 @@ PROGRAM FLOW
 3. runtime ends
 
 PROJECT STRUCTURE
-config, yaml configuration for project
+config
+    config, yaml configuration for project
 env, the virtual environment created by something like python3 -m venv ./env at root of project
 src
     cloners, individual data cloners
         example_cloner.ExampleCloner, an example with only the required cloner properties
         remote_specific_cloner.RemoteSpecificCloner, some misc cloner
-    config_reader
-        __init__
-        config_reader, module to read the yaml config
     managers,
         cloner_manager.ClonerManager, manager of all data cloners
+    util
+        util, module for general utilities
     __init__
     main, entry-point to python
 test
     mock, reusable-parts for test modules
     test_cloner_manager
     test_config_reader
+    test_A_cloner
+    test_B_cloner
+    ..
+    test_J_cloner
     test_main
-    test_remote_specific_cloner
-    test_remote_specific_cloner_authenticate
-    test_remote_specific_cloner_download
-.gitignore
+    test_util
+.gitignore, list of files/folders/patterns to avoid adding to repo
 credentials.json, required by googledrive pypi package
-planning.txt, this file
+planning.txt, this file, lays out a vision for the project
 requirements.txt, pip's requirements

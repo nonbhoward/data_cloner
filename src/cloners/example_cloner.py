@@ -1,3 +1,5 @@
+# Example cloner with minimal required properties
+
 """Bare minimum example for a new cloner
 
 In order to add a new cloner :
