@@ -121,7 +121,7 @@ class GoogleDriveCloner:
                 continue
 
             # Process resulting files
-            print(f'Processing results page {results_processed}')
+            print(f'Total objects encountered : {results_processed}')
             results_processed += page_size
             for file in results['files']:
                 if file['mimeType'] not in unique_mime_types:
