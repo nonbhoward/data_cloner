@@ -15,7 +15,6 @@ def main():
     cm = ClonerManager(config_manager=config_manager)
     while cm.cloners_to_run:
         cm.run()
-    exit()
 
 
 if __name__ == '__main__':
