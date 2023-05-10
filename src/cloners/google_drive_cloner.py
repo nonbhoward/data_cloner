@@ -22,14 +22,18 @@ class GoogleDriveCloner:
     _TOKEN = 'token.json'
 
     def __init__(self):
+        # TODO cache write/load
+        self._drive_metadata = None
         self._service = None
 
     def run(self):
         self.authenticate()
-        results = self.service.files().list(
-            pageSize=10, fields="nextPageToken, files(id, name)").execute()
-        items = results.get('files', [])
-        breakpoint()
+        self.read_drive_metadata()
+        # 1. (in progress) Get a list of all files on the drive
+        # 2. Get a list of all files backed up locally
+        # 3. Comparing the lists, get a list of files to fetch from drive
+        # 4. Fetch the files, writing them locally
+        # 5. Track bandwidth usage and report it to the cloner manager
 
     @property
     def active(self):
@@ -74,8 +78,65 @@ class GoogleDriveCloner:
         pass
 
     @property
+    def drive_metadata(self) -> dict:
+        return self._drive_metadata
+
+    @drive_metadata.setter
+    def drive_metadata(self, value: dict):
+        self._drive_metadata = value
+
+    @property
     def name(self) -> str:
         return self._NAME
+
+    def read_drive_metadata(self, page_size=10) -> dict:
+        """Use the service object to access endpoints to the root url
+          https://www.googleapis.com
+
+        :param page_size: int: number of results to fetch per file list
+          request
+        :return: drive_metadata: dict: metadata of the drive contents
+        """
+        drive_metadata = {}
+
+        unique_mime_types = []  # TODO delete this
+        unique_file_types = []  # TODO delete this
+
+        results_processed = page_size
+        next_page_token, first_loop = None, True
+        while next_page_token or first_loop:
+            if first_loop:  # get initial results and page token
+                first_loop = False
+                results = self.service.files().list(
+                    pageSize=page_size
+                ).execute()
+                next_page_token = results['nextPageToken']
+            else:  # apply fetched page token
+                results = self.service.files().list(
+                    pageSize=10,
+                    pageToken=next_page_token
+                ).execute()
+
+            if 'files' not in results:
+                continue
+
+            # Process resulting files
+            print(f'Processing results page {results_processed}')
+            results_processed += page_size
+            for file in results['files']:
+                if file['mimeType'] not in unique_mime_types:
+                    unique_mime_types.append(file['mimeType'])
+                if file['kind'] not in unique_file_types:
+                    unique_file_types.append(file['kind'])
+                drive_metadata.update({
+                    file['id']: {
+                        'kind': file['kind'],
+                        'mime_type': file['mimeType'],
+                        'name': file['name']
+                    }
+                })
+
+        return drive_metadata
 
     @property
     def service(self) -> Resource:
