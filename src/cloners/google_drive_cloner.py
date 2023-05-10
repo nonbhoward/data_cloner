@@ -8,6 +8,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.discovery import Resource
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
@@ -21,6 +22,13 @@ class GoogleDriveCloner:
     _TOKEN = 'token.json'
 
     def __init__(self):
+        self._service = None
+
+    def run(self):
+        self.authenticate()
+        results = self.service.files().list(
+            pageSize=10, fields="nextPageToken, files(id, name)").execute()
+        items = results.get('files', [])
         pass
 
     @property
@@ -51,12 +59,7 @@ class GoogleDriveCloner:
             with open(self._TOKEN, 'w') as token:
                 token.write(creds.to_json())
 
-        service = build('drive', 'v3', credentials=creds)
-
-        # TODO convert and delete below
-        results = service.files().list(
-            pageSize=10, fields="nextPageToken, files(id, name)").execute()
-        items = results.get('files', [])
+        self.service = build('drive', 'v3', credentials=creds)
 
     def cache_create_new(self):
         pass
@@ -71,9 +74,13 @@ class GoogleDriveCloner:
         pass
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._NAME
 
-    @name.setter
-    def name(self, value):
-        print(f"Do not set this attribute, discarding value : {value}")
+    @property
+    def service(self) -> Resource:
+        return self._service
+
+    @service.setter
+    def service(self, value: Resource):
+        self._service = value

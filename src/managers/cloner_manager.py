@@ -15,6 +15,7 @@ from src.managers.config_manager import ConfigManager
 class ClonerManager:
     def __init__(self, config_manager: ConfigManager):
         self._cloners_active = False
+        self._initialized_cloners = []
 
         # Assign args to class
         self._config_manager = config_manager
@@ -24,12 +25,12 @@ class ClonerManager:
 
         # Search local imports for enabled cloners
         # Initialize the enabled cloners
-        enabled_cloners = self._config_manager.enabled_cloners
-
         # Collect imported objects for iteration
         content_root = self._config_manager.content_root
-        data_cloners = collect_cloners(content_root=content_root,
-                                       enabled_cloners=enabled_cloners)
+        data_cloners = collect_cloners(
+            content_root=content_root,
+            enabled_cloners=self._config_manager.enabled_cloners
+        )
 
         for cloner_name, cloner_cls in data_cloners:
             if not cloner_cls:
@@ -38,13 +39,19 @@ class ClonerManager:
             if not inspect.isclass(cloner_cls):
                 continue  # Skip non-class objects
 
+            if not hasattr(cloner_cls, "_ACTIVE"):
+                continue  # Skip objects without this attribute
+
+            if not cloner_cls._ACTIVE:
+                continue  # Skip objects where this attribute is falsy
+
             if not hasattr(cloner_cls, "_NAME"):
-                continue  # Skip objects without name attribute
+                continue  # Skip objects without this attribute
 
             if not cloner_cls._NAME:
-                continue  # Skip objects without a name
+                continue  # Skip objects where this attribute is falsy
 
-            if cloner_cls._NAME not in enabled_cloners:
+            if cloner_cls.__name__ not in self._config_manager.enabled_cloners:
                 continue  # Skip names that are listed in config as enabled
 
             # Initialize the cloner and store it to the manager
@@ -59,16 +66,8 @@ class ClonerManager:
         self._cloners = value
 
     @property
-    def cloners_active(self) -> bool:
-        return self._cloners_active
-
-    @cloners_active.setter
-    def cloners_active(self, value: bool) -> None:
-        if not isinstance(value, bool):
-            print(f'warning, non-bool value {value} passed to '
-                  f'{self.__class__.__name__} attribute')
-            return
-        self._cloners_active = value
+    def cloners_to_run(self) -> bool:
+        return True if self.cloners else False
 
     @property
     def config(self) -> dict:
@@ -78,11 +77,47 @@ class ClonerManager:
     def config(self, value):
         self._config = value
 
+    @property
+    def initialized_cloners(self) -> list:
+        return self._initialized_cloners
+
+    @initialized_cloners.setter
+    def initialized_cloners(self, value: list):
+        self._initialized_cloners = value
+
     def run(self):
-        # Run the initialized cloners
+        """The primary action for this class"""
+        # Initialized the collected cloners
+        self.initialize_cloners()
         # TODO dispatch asynchronously when >1 cloner
+        self.dispatch_cloners()
+        self.wait_for_cloners()
+
+    def initialize_cloners(self):
+        """Initialize cloners collected by this class"""
+
+        initialized_cloners = []
         for cloner in self.cloners:
-            cloner.run()
+            try:
+                initialized_cloners.append(cloner())
+            except Exception as exc:
+                # TODO specify exceptions
+                raise exc
+        self.initialized_cloners = initialized_cloners
+
+    def dispatch_cloners(self):
+        """Run cloners collected by this class"""
+
+        # TODO when a cloner returns, delete it from self.cloners
+        for initialized_cloner in self.initialized_cloners:
+            try:
+                initialized_cloner.run()
+            except Exception as exc:
+                # TODO specify exceptions
+                raise exc
+
+    def wait_for_cloners(self):
+        pass
 
 
 def collect_cloners(content_root: Path,
