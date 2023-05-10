@@ -1,6 +1,6 @@
 # file
-credentials.json
-token.json
+credentials.*
+token.*
 
 # folder
 __pycache__
@@ -8,3 +8,4 @@ env
 .idea
 
 # pattern
+*egg-info
