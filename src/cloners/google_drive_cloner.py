@@ -17,23 +17,36 @@ SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 class GoogleDriveCloner:
     # Class attributes
     _ACTIVE = True
-    _NAME = 'GoogleDrive'
+    _FOLDER_NAME = 'GoogleDrive'
+    _NO_MORE_PAGES = '__THERE_ARE_NO_MORE_PAGES__'
     _SECRETS = 'credentials.json'
     _TOKEN = 'token.json'
 
     def __init__(self):
         # TODO cache write/load
-        self._drive_metadata = None
+        self._drive_metadata = {}
+        self._next_page_token = ''
+        self._results_processed = 0
         self._service = None
+
+        # TODO delete or property below
+        self._unique_mime_types = []
+        self._unique_file_types = []
 
     def run(self):
         self.authenticate()
-        self.read_drive_metadata()
+
         # 1. (in progress) Get a list of all files on the drive
+        while self.next_page_token is not self._NO_MORE_PAGES:
+            self.read_drive_metadata(page_size=10)
+
+        pass
         # 2. Get a list of all files backed up locally
         # 3. Comparing the lists, get a list of files to fetch from drive
         # 4. Fetch the files, writing them locally
         # 5. Track bandwidth usage and report it to the cloner manager
+        if self.next_page_token is self._NO_MORE_PAGES:
+            self.reset()
 
     @property
     def active(self):
@@ -86,57 +99,70 @@ class GoogleDriveCloner:
         self._drive_metadata = value
 
     @property
-    def name(self) -> str:
-        return self._NAME
+    def next_page_token(self) -> str:
+        return self._next_page_token
 
-    def read_drive_metadata(self, page_size=10) -> dict:
+    @next_page_token.setter
+    def next_page_token(self, value: str):
+        self._next_page_token = value
+
+    def read_drive_metadata(self, page_size=10) -> None:
         """Use the service object to access endpoints to the root url
           https://www.googleapis.com
 
-        :param page_size: int: number of results to fetch per file list
-          request
-        :return: drive_metadata: dict: metadata of the drive contents
+        :param page_size: int: result count to fetch per request
         """
-        drive_metadata = {}
 
-        unique_mime_types = []  # TODO delete this
-        unique_file_types = []  # TODO delete this
+        try:
+            results = self.service.files().list(
+                pageSize=page_size,
+                pageToken=self.next_page_token
+            ).execute()
+        except Exception as exc:
+            # TODO add functionality to allow resume after http errors
+            print(f'{exc}')
 
-        results_processed = page_size
-        next_page_token, first_loop = None, True
-        while next_page_token or first_loop:
-            if first_loop:  # get initial results and page token
-                first_loop = False
-                results = self.service.files().list(
-                    pageSize=page_size
-                ).execute()
-                next_page_token = results['nextPageToken']
-            else:  # apply fetched page token
-                results = self.service.files().list(
-                    pageSize=10,
-                    pageToken=next_page_token
-                ).execute()
-
-            if 'files' not in results:
-                continue
-
-            # Process resulting files
-            print(f'Total objects encountered : {results_processed}')
-            results_processed += page_size
+        if 'files' in results:
+            # Iterate through files metadata
             for file in results['files']:
-                if file['mimeType'] not in unique_mime_types:
-                    unique_mime_types.append(file['mimeType'])
-                if file['kind'] not in unique_file_types:
-                    unique_file_types.append(file['kind'])
-                drive_metadata.update({
+
+                # Record unique types
+                if file['mimeType'] not in self._unique_mime_types:
+                    self._unique_mime_types.append(file['mimeType'])
+                if file['kind'] not in self._unique_file_types:
+                    self._unique_file_types.append(file['kind'])
+
+                # Record files metadata
+                self.drive_metadata.update({
                     file['id']: {
                         'kind': file['kind'],
                         'mime_type': file['mimeType'],
                         'name': file['name']
                     }
-                })
+                })  # Exit for loop
+            self.results_processed += len(results['files'])
+            print(f'Total objects encountered : {self.results_processed}')
 
-        return drive_metadata
+        # Fetch ref to next page
+        if 'nextPageToken' not in results:
+            self.next_page_token = self._NO_MORE_PAGES
+            return  # No more pages
+        self.next_page_token = results['nextPageToken']
+
+    def reset(self):
+        """A place to reset class information in the case of subsequent runs.
+          May not be needed
+        """
+        print("TODO delete this function if possible")
+        self.next_page_token = ''
+
+    @property
+    def results_processed(self) -> int:
+        return self._results_processed
+
+    @results_processed.setter
+    def results_processed(self, value: int):
+        self._results_processed = value
 
     @property
     def service(self) -> Resource:

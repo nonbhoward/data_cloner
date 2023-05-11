@@ -45,14 +45,8 @@ class ClonerManager:
             if not cloner_cls._ACTIVE:
                 continue  # Skip objects where this attribute is falsy
 
-            if not hasattr(cloner_cls, "_NAME"):
-                continue  # Skip objects without this attribute
-
-            if not cloner_cls._NAME:
-                continue  # Skip objects where this attribute is falsy
-
             if cloner_cls.__name__ not in self._config_manager.enabled_cloners:
-                continue  # Skip names that are listed in config as enabled
+                continue  # Skip names not listed in config as enabled
 
             # Initialize the cloner and store it to the manager
             self.cloners.append(cloner_cls)
