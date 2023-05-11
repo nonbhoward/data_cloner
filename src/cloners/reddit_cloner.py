@@ -26,7 +26,7 @@ class RedditDataCloner:
           cloner.
         """
         # TODO test and validate this, add vals to dotenv
-        # Load dotenv to local environment
+        # Load dotenv to local environment, convenience variable
         dotenv = self._config_manager.dotenv
 
         client_id = dotenv['client_id']
