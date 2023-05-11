@@ -2,25 +2,37 @@ A central place to plan project structure in attempt to head-off misunderstandin
 
 EXECUTION HIERARCHY
 run -> src.main.py
-  cloner_manager, the central object of the program
-    data_cloner(s)
-  config_manager (accessible via cloner_manager)
+    cache_manager, access locally cached metadata
+    cloner_manager, the central object of the program
+        cache_manager
+        config_manager
+        data_cloner(s)
+    config_manager, access config.yaml key values
+    file_manager, access locally stored files
 
 OBJECTS
+    CACHE_MANAGER, object that handle disk read/write
+        this object is passed to and managed by the cloner manager
+        what should it do?
+
     CLONER MANAGER, generic container for cloners
-    what should it do?
+        what should it do?
         launch the cloners
         manage the cache
         throttle transfers?
           what else could do this job?
+
     CONFIG MANAGER, object to avoid having to manually modify config dict
+        this object is passed to and managed by the cloner manager
+
     DATA CLONER
-    remote_specific_cloner, for example google_drive_cloner
-        attributes
-            memory_data_rate, a throttling mechanism in bytes/second
-        functions
-            download, fetch remote files
-            upload, no plans to implement upload as use-case is currently fetching
+        this object is passed to and managed by the cloner manager
+        remote_specific_cloner, for example google_drive_cloner
+            attributes
+                memory_data_rate, a throttling mechanism in bytes/second
+            functions
+                download, fetch remote files
+                upload, no plans to implement upload as use-case is currently fetching
 
 PLANNED FEATURES
 authenticate with multiple remotes
