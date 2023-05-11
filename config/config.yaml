@@ -1,2 +1,2 @@
 enabled_cloners:
-  [GoogleDriveCloner]
+  [GoogleDriveCloner, RedditDataCloner]
