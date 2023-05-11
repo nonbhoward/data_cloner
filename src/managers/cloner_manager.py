@@ -14,6 +14,7 @@ from src.managers.config_manager import ConfigManager
 
 class ClonerManager:
     def __init__(self, config_manager: ConfigManager):
+        print(f'Initializing {self.__class__.__name__}')
         self._cloners_active = False
         self._initialized_cloners = []
 
@@ -48,7 +49,7 @@ class ClonerManager:
             if cloner_cls.__name__ not in self._config_manager.enabled_cloners:
                 continue  # Skip names not listed in config as enabled
 
-            # Initialize the cloner and store it to the manager
+            # Store the uninitialized cloner to the manager
             self.cloners.append(cloner_cls)
 
     @property
@@ -93,9 +94,10 @@ class ClonerManager:
         initialized_cloners = []
         for cloner in self.cloners:
             try:
+                # Initialize each cloner
                 initialized_cloners.append(cloner())
             except Exception as exc:
-                # TODO specify exceptions
+                # TODO specify exceptions regarding failed class initialization
                 raise exc
         self.initialized_cloners = initialized_cloners
 
@@ -153,7 +155,7 @@ def collect_cloners(content_root: Path,
             py_member_name = py_member[0]
             py_member_val = py_member[1]
             if not inspect.isclass(py_member_val):
-                continue
+                continue  # Skip non-class objects
             found_classes.append(py_member)
 
     # 3. Per found class, eliminate those not pre-listed as cloners

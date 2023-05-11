@@ -27,7 +27,7 @@ setter_message_bad_type = f"Bad type for setter"
 
 class ConfigManager:
     def __init__(self, path_to_config='', project_name=''):
-        pass
+        print(f'Initializing {self.__class__.__name__}')
         self._config = self.read_config(path_to_config=path_to_config,
                                         project_name=project_name)
 

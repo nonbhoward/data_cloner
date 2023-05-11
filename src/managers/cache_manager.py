@@ -9,6 +9,7 @@ from src.managers.config_manager import ConfigManager
 
 class CacheManager:
     def __init__(self, config_manager: ConfigManager):
+        print(f'Initializing {self.__class__.__name__}')
         self._config_manager = config_manager
 
     def read(self) -> dict:

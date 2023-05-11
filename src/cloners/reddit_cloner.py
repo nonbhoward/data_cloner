@@ -13,6 +13,7 @@ class RedditDataCloner:
 
     def __init__(self, config_manager: ConfigManager,
                  folder_extension: str):
+        print(f'Initializing {self.__class__.__name__}')
         self._config_manager = config_manager
         self.reddit = None
 
@@ -24,6 +25,7 @@ class RedditDataCloner:
         This will authenticate with whatever API and be different for each
           cloner.
         """
+        # TODO test and validate this, add vals to dotenv
         # Load dotenv to local environment
         dotenv = self._config_manager.dotenv
 

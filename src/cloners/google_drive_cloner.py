@@ -23,6 +23,7 @@ class GoogleDriveCloner:
     _TOKEN = 'token.json'
 
     def __init__(self):
+        print(f'Initializing {self.__class__.__name__}')
         # TODO cache write/load
         self._drive_metadata = {}
         self._next_page_token = ''
