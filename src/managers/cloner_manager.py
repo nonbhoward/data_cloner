@@ -84,7 +84,6 @@ class ClonerManager:
         """The primary action for this class"""
         # Initialized the collected cloners
         self.initialize_cloners()
-        # TODO dispatch asynchronously when >1 cloner
         self.dispatch_cloners()
         self.wait_for_cloners()
 
@@ -95,7 +94,9 @@ class ClonerManager:
         for cloner in self.cloners:
             try:
                 # Initialize each cloner
-                initialized_cloners.append(cloner())
+                initialized_cloners.append(
+                    cloner(config_manager=self._config_manager)
+                )
             except Exception as exc:
                 # TODO specify exceptions regarding failed class initialization
                 raise exc
@@ -103,7 +104,7 @@ class ClonerManager:
 
     def dispatch_cloners(self):
         """Run cloners collected by this class"""
-
+        # TODO dispatch asynchronously when >1 cloner
         # TODO when a cloner returns, delete it from self.cloners
         for initialized_cloner in self.initialized_cloners:
             try:

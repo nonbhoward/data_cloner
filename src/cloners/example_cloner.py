@@ -11,9 +11,15 @@ In order to add a new cloner :
 Now the cloner manager should find it
 """
 
+# imports, project
+from src.managers.config_manager import ConfigManager
+
 
 class ExampleCloner:
     _ACTIVE = True
+
+    def __init__(self, config_manager: ConfigManager):
+        self._config_manager = config_manager
 
     def authenticate(self):
         """

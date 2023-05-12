@@ -10,6 +10,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.discovery import Resource
 
+# imports, project
+from src.managers.config_manager import ConfigManager
+
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
@@ -22,9 +25,10 @@ class GoogleDriveCloner:
     _SECRETS = 'credentials.json'
     _TOKEN = 'token.json'
 
-    def __init__(self):
+    def __init__(self, config_manager: ConfigManager):
         print(f'Initializing {self.__class__.__name__}')
         # TODO cache write/load
+        self._config_manager = config_manager
         self._drive_metadata = {}
         self._next_page_token = ''
         self._results_processed = 0
@@ -40,6 +44,8 @@ class GoogleDriveCloner:
         # 1. (in progress) Get a list of all files on the drive
         while self.next_page_token is not self._NO_MORE_PAGES:
             self.read_drive_metadata(page_size=10)
+
+        print(f'Cloner task finished : {self.__class__.__name__}')
 
         pass
         # 2. Get a list of all files backed up locally

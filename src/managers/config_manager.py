@@ -30,6 +30,7 @@ class ConfigManager:
         print(f'Initializing {self.__class__.__name__}')
         self._config = self.read_config(path_to_config=path_to_config,
                                         project_name=project_name)
+        self._dotenv = None
 
     @staticmethod
     def read_config(path_to_config='', project_name='') -> dict:
@@ -39,7 +40,7 @@ class ConfigManager:
 
         :param path_to_config: override automatically finding config.
         :param project_name: override default project name.
-        :return: The config dictionary."""
+        :return: yaml_cfg: dict: The config dictionary."""
 
         if not project_name:
             project_name = default_project_name
@@ -88,6 +89,21 @@ class ConfigManager:
     def content_root(self, value):
         validate_setter_value(value=value, type_requirement=Path)
         self._config['paths']['content_root'] = value
+
+    @property
+    def destroy_remote(self) -> list:
+        return self._config['destroy_remote']
+
+    @property
+    def dotenv(self) -> dict:
+        return self._config['dotenv']
+
+    @dotenv.setter
+    def dotenv(self, value: dict):
+        # TODO delete this function if unused under the rationale that
+        #   any use of this function would be highly prone to breaking
+        #   something as well as general bad practice.
+        self._config['dotenv'] = value
 
     @property
     def enabled_cloners(self) -> list:
