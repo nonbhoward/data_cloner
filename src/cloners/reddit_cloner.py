@@ -171,14 +171,49 @@ class RedditDataCloner:
             content = response.content
         if status_code != 200:
             return
-        ext_jpg = '.jpg'
-        if content and url and url.endswith(ext_jpg):
+
+        # Extract extension
+        try:
+            extension = '.' + url.split('.')[-1]
+        except Exception as exc:
+            print(f'No extension found for {url}')
+            extension = None
+
+        # TODO Flag to catch edge-cases.. hopefully  never triggers
+        # Process url.split() throws exception
+        if extension is None:
+            print(f'Extension is none for url : {url}')
+            breakpoint()
+            return  # Exception thrown
+
+        # Process jpeg, gif
+        supported_extensions = ['.gif', '.jpg', '.png']
+        if content and url and extension in supported_extensions:
             print(f'Processing url : {url}')
             self.save_file_and_update_destroy_metadata(
                 response=response,
                 sub_metadata=sub_metadata,
-                ext=ext_jpg
+                ext=extension
             )
+            return  # jpg, gif, png return
+
+        # TODO Process gifv
+        special_extensions = ['.gifv']
+        if content and url and extension in special_extensions:
+            print(f'Special ext encountered at : {url}')
+            return  # gifv return
+
+        # TODO process red
+        if 'gifs' in url and 'watch' in url:
+            print(f'Red encountered at : {url}')
+            return  # Non-critical target return
+
+        # TODO process cat
+        if 'https' in url and 'gfycat' in url:
+            print(f'Cat encountered at : {url}')
+            return  # Non-critical target return
+
+        print(f'New file type encountered. Url : {url}')
 
     # SUB-RUN FUNCTION
     def save_file_and_update_destroy_metadata(self, response, sub_metadata, ext):
