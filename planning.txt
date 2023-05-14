@@ -1,9 +1,28 @@
 A central place to plan project structure in attempt to head-off misunderstandings
 
-EXECUTION HIERARCHY
+QUICK REDDIT HACK
+    get top posts
+    extract metadata from top posts
+    iterate over top posts
+        check if metadata in "to delete" collection
+            if top post found in "to delete", send remove
+        attempt to download each, saving to a guid folder
+        write json metadata to same download folder
+        confirm data downloaded
+        update "to delete" metadata with downloaded file's metadata
+
+EXECUTION HIERARCHY AND DATA MANAGEMENT PLAN
+# TODO think through this
 run -> src.main.py
-    cache_manager, access locally cached metadata
-    cloner_manager, the central object of the program
+    config manager initializes, reads config
+        requires nothing
+    metadata manager initializes, reads metadata location from config manager
+        requires config manager
+    data manager initializes, reads data location from config manager
+        requires config manager
+    metadata manager reads/loads previous run metadata
+    data manager reads file directory tree at data location
+    cloner_manager initializes, dynamically imports and loads cloners
         cache_manager
         config_manager
         data_cloner(s)
@@ -11,51 +30,53 @@ run -> src.main.py
     file_manager, access locally stored files
 
 OBJECTS
-    CACHE_MANAGER, object that handle disk read/write
-        this object is passed to and managed by the cloner manager
-        what should it do?
+    CACHE_MANAGER, object handling management of metadata that persists
+      between runs of the application
+        read cache locations
+        present cache information in a human-readable form
+        write cache locations
 
-    CLONER MANAGER, generic container for cloners
-        what should it do?
+    CLONER MANAGER, object handling management of cloners and cloners'
+      returned data
         launch the cloners
-        manage the cache
-        throttle transfers?
-          what else could do this job?
+        pass data to cache manager
+        pass data to file manager
+        throttle transfers
 
     CONFIG MANAGER, object to avoid having to manually modify config dict
-        this object is passed to and managed by the cloner manager
+        manage reads-to and writes-from the configuration dict
 
-    DATA CLONER
-        this object is passed to and managed by the cloner manager
-        remote_specific_cloner, for example google_drive_cloner
-            attributes
-                memory_data_rate, a throttling mechanism in bytes/second
-            functions
-                download, fetch remote files
-                upload, no plans to implement upload as use-case is currently fetching
+    DATA CLONER, object to clone some remote, specific functions planned elsewhere.
+      (see "PLANNED FEATURES")
+        remote_specific_cloner_a, for example google_drive_cloner
+        remote_specific_cloner_b, for example google_drive_cloner
+        ..
+        remote_specific_cloner_z, for example google_drive_cloner
 
-PLANNED FEATURES
-authenticate with multiple remotes
-dispatch cloners asynchronously
-cache data between runs in a compressed json
 
-PROGRAM FLOW
-1. read local configuration & environment variables
-    read config works, DONE
-    read dotenv works, DONE
-2. main module instantiates cloner manager class with config
-    cloner manager (cm) locates and dynamically imports cloners, DONE
-    cm instantiates cloners that need to run
-    cm checks that there are cloners that are ready to run
-    cm loads previous run's cache
-    cm performs check to see which cloners to instantiate
-    cm deploys the cloners asynchronously
-    cm manages the returned data
-    cm creates a cache of cloner metadata as it runs
-    cm waits until all cloners are finished running
-    cm records timestamp
-    cm writes cache to disk and exits
-3. runtime ends
+    FILE MANAGER, object to handle disk read/write activity regarding data,
+        noting that metadata is handled by the cache manager
+
+
+PLANNED FEATURES, aka "specific functions planned elsewhere"
+    authenticate with multiple remotes
+    cache data between runs in a compressed json
+    dispatch cloners asynchronously
+    GOOGLEDRIVE
+        read metadata, DONE
+        download data
+        organize cache for :
+            remote/local deltas
+    REDDIT
+        read metadata, IN-PROGRESS
+        download data
+        confirm downloads
+        organize cache for :
+            download confirmation
+        option to destroy remote data
+
+POTENTIAL CLONER TARGETS
+    FACEBOOK, LASTFM, MEGA,
 
 PROJECT STRUCTURE
 config
@@ -66,7 +87,10 @@ src
         example_cloner.ExampleCloner, an example with only the required cloner properties
         remote_specific_cloner.RemoteSpecificCloner, some misc cloner
     managers,
+        cache_manager.CacheManager, manager of all cached data
         cloner_manager.ClonerManager, manager of all data cloners
+        config_manager.ConfigManager, manager of configuration data sourced from config.config.yaml
+        file_manager.FileManager, manager of file read/writes
     util
         util, module for general utilities
     __init__
@@ -74,7 +98,7 @@ src
 test
     mock, reusable-parts for test modules
     test_cloner_manager
-    test_config_reader
+    test_config_manager
     test_A_cloner
     test_B_cloner
     ..

@@ -5,7 +5,6 @@ from pathlib import Path
 from time import sleep
 import json
 import os
-import random
 import requests
 
 # imports, third-party
@@ -22,11 +21,12 @@ class RedditDataCloner:
     def __init__(self, config_manager: ConfigManager):
         print(f'Initializing {self.__class__.__name__}')
         self._config_manager = config_manager
-        self._delay_per_download = 15
+        self._delay_per_download = 3
         self._destroy_remote = False
         self._path_to_reddit_media = None
-        self._submissions_per_request = 2
+        self._submissions_per_request = 1000
         self._reddit = None
+        self._submissions_to_destroy = []
         self._subreddit = None
 
         self.top_submissions_metadata = {}
@@ -83,27 +83,50 @@ class RedditDataCloner:
         # 1. Fetch metadata
         self.fetch_and_parse_submissions()
         # 2. Attempt to download remote file
-        self.clone_remote_data()
+        self.save_data_to_disk()
         # 3. Confirm remote file download success
         # 4. Delete the remote
+        self._destroy_remote = True  # TODO delete
         if self._destroy_remote:
             self.destroy_remote()
 
         print(f'Cloner task finished : {self.__class__.__name__}')
 
-    def clone_remote_data(self):
+    def save_data_to_disk(self):
+        submission_count = len(self.top_submissions_metadata)
+        submission_number = 0
         for sub_id, sub_metadata in self.top_submissions_metadata.items():
+            submission_number += 1
             url = None
             if 'url' in sub_metadata:
                 url = sub_metadata['url']
             if not url:
                 continue  # Skip if missing url
-            response = requests.get(url=url)
-            parsed_response = self.parse_response(response=response,
-                                                  sub_metadata=sub_metadata)
-            self.wait_between_downloads()
+            print(f'Attempting to process url : {url}, submission {submission_number} / {submission_count}')
+            try:
+                response = requests.get(url=url)
+            except Exception as exc:
+                print(f'Exception encountered processing {sub_id} : {sub_metadata}')
+                continue
+            self.parse_response_and_save_data(
+                response=response,
+                sub_metadata=sub_metadata
+            )
+            self.wait_btw_actions()
 
     def destroy_remote(self):
+        submissions_to_destroy = []
+        for sl_id in self._submissions_to_destroy:
+            submission = self._reddit.submission(sl_id)
+            submissions_to_destroy.append(submission)
+
+        remove_count = len(submissions_to_destroy)
+        removed = 0
+        for submission_to_destroy in submissions_to_destroy:
+            submission_to_destroy.mod.remove()
+            removed += 1
+            print(f'Successfully removed : {submission_to_destroy}, {removed} / {remove_count}')
+            self.wait_btw_actions()
         pass
 
     def fetch_and_parse_submissions(self):
@@ -116,13 +139,15 @@ class RedditDataCloner:
 
         # Parse submission metadata
         top_submissions_metadata = {}
+        submissions_processed = 0
         for submission_listing in submission_listing_generator:
+            submissions_processed += 1
+            print(f'Processing submission : {submissions_processed} / {self._submissions_per_request}')
             # Extract metadata
             submission_metadata = extract_submission_metadata(
                 submission_listing=submission_listing)
 
-            guid_ext = random.randint(100, 999)
-            submission_guid = submission_metadata['id'] + f'_{guid_ext}'
+            submission_guid = submission_metadata['id']
             top_submissions_metadata.update({
                 submission_guid: submission_metadata
             })
@@ -130,22 +155,84 @@ class RedditDataCloner:
         # Store data to class
         self.top_submissions_metadata = top_submissions_metadata
 
-    def parse_response(self, response, sub_metadata) -> dict:
-        content, url = None, None
+    def parse_response_and_save_data(self, response, sub_metadata):
+        content, status_code, url = None, None, None
+        if hasattr(response, 'status_code'):
+            status_code = response.status_code
         if hasattr(response, 'url'):
             url = response.url
         if hasattr(response, 'content'):
             content = response.content
-        if content and url and url.endswith('.jpg'):
-            self.save_file(content=content, sub_metadata=sub_metadata)
+        if status_code != 200:
+            return
+        ext_jpg = '.jpg'
+        if content and url and url.endswith(ext_jpg):
+            print(f'Processing url : {url}')
+            self.save_file_and_update_destroy_metadata(
+                response=response,
+                sub_metadata=sub_metadata,
+                ext=ext_jpg
+            )
 
-    def save_file(self, content, sub_metadata):
+    def save_file_and_update_destroy_metadata(self, response, sub_metadata, ext):
+        content = response.content
+
+        # Build path to media
         path_to_reddit_media = self._path_to_reddit_media
-        pass
+        if 'id' not in sub_metadata:
+            print(f'Cannot save file : {sub_metadata}')
+            return
+        sl_id = sub_metadata['id']
 
-    def wait_between_downloads(self):
-        for i in range(self._delay_per_download, 0):
-            print(f"Waiting {self._delay_per_download} : {i}")
+        path_to_save_submission_data = Path(path_to_reddit_media, sl_id)
+
+        if not os.path.exists(path_to_save_submission_data):
+            os.mkdir(path_to_save_submission_data)
+
+        # Build file name
+        if 'author' not in sub_metadata:
+            print(f'No author : {sub_metadata}')
+            return
+
+        if 'created_utc' not in sub_metadata:
+            print(f'No creation time : {sub_metadata}')
+            return
+
+        file_name_to_write = str(sub_metadata['created_utc']) + '_' + sub_metadata['author'] + ext
+        path_to_write_file = Path(path_to_save_submission_data, file_name_to_write)
+
+        # Write file
+        with open(path_to_write_file, 'wb') as ftw:
+            ftw.write(content)
+
+        # Build metadata name
+        metadata_file_name = file_name_to_write + '_metadata' + '.json'
+        path_to_write_metadata = Path(path_to_save_submission_data, metadata_file_name)
+
+        # Write metadata
+        with open(path_to_write_metadata, 'w') as mtw:
+            json.dump(sub_metadata, mtw)
+
+        # Confirm files saved
+        all_files = []
+        for root, dirs, files in os.walk(path_to_reddit_media):
+            for file in files:
+                all_files.append(Path(root, file))
+
+        if path_to_write_file not in all_files:
+            return
+        print(f'Confirmed file written')
+
+        if path_to_write_metadata not in all_files:
+            return
+        print(f'Confirmed metadata written')
+
+        # Create deletion metadata, save to class to be dumped to disk
+        self._submissions_to_destroy.append(sl_id)
+
+    def wait_btw_actions(self):
+        for i in range(self._delay_per_download):
+            print(f"Waiting {self._delay_per_download} seconds : {i}")
             sleep(1)
 
 

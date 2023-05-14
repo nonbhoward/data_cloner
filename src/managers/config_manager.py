@@ -92,7 +92,7 @@ class ConfigManager:
 
     @property
     def destroy_remote(self) -> list:
-        return self._config['destroy_remote']
+        return self._config['ClonerManager']['destroy_remote']
 
     @property
     def dotenv(self) -> dict:
@@ -108,13 +108,13 @@ class ConfigManager:
     @property
     def enabled_cloners(self) -> list:
         """A list of strings indicating cloners that are expected to run."""
-        return self._config['enabled_cloners']
+        return self._config['ClonerManager']['enabled_cloners']
 
     @enabled_cloners.setter
     def enabled_cloners(self, value: list):
         """Same description as property"""
         validate_setter_value(value=value, type_requirement=list)
-        self._config['enabled_cloners'] = value
+        self._config['ClonerManager']['enabled_cloners'] = value
 
 
 def add_dotenv_to_config(config, dotenv_filename='.env') -> dict:
