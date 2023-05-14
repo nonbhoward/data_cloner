@@ -38,6 +38,24 @@ class RedditDataCloner:
             if self.__class__.__name__ in remotes_to_destroy:
                 self._destroy_remote = True
 
+    def run(self, destroy=False):
+        """The primary action for this class"""
+        self.authenticate()
+        self.configure()
+
+        # 1. Fetch metadata
+        self.fetch_and_parse_submissions()
+        # 2. Attempt to download remote file
+        self.save_data_to_disk()
+        # 3. Confirm remote file download success
+        # 4. Delete the remote
+        self._destroy_remote = True  # TODO delete
+        if self._destroy_remote:
+            self.destroy_remote()
+
+        print(f'Cloner task finished : {self.__class__.__name__}')
+
+    # RUN-LEVEL FUNCTION
     def authenticate(self):
         """
         This will authenticate with whatever API and be different for each
@@ -60,6 +78,7 @@ class RedditDataCloner:
             username=username
         )
 
+    # RUN-LEVEL FUNCTION
     def configure(self):
         # Configure the subreddit target
         target_subreddit = self._config_manager.dotenv['subreddit']
@@ -75,60 +94,7 @@ class RedditDataCloner:
             os.mkdir(path_to_reddit_media)
         self._path_to_reddit_media = path_to_reddit_media
 
-    def run(self, destroy=False):
-        """The primary action for this class"""
-        self.authenticate()
-        self.configure()
-
-        # 1. Fetch metadata
-        self.fetch_and_parse_submissions()
-        # 2. Attempt to download remote file
-        self.save_data_to_disk()
-        # 3. Confirm remote file download success
-        # 4. Delete the remote
-        self._destroy_remote = True  # TODO delete
-        if self._destroy_remote:
-            self.destroy_remote()
-
-        print(f'Cloner task finished : {self.__class__.__name__}')
-
-    def save_data_to_disk(self):
-        submission_count = len(self.top_submissions_metadata)
-        submission_number = 0
-        for sub_id, sub_metadata in self.top_submissions_metadata.items():
-            submission_number += 1
-            url = None
-            if 'url' in sub_metadata:
-                url = sub_metadata['url']
-            if not url:
-                continue  # Skip if missing url
-            print(f'Attempting to process url : {url}, submission {submission_number} / {submission_count}')
-            try:
-                response = requests.get(url=url)
-            except Exception as exc:
-                print(f'Exception encountered processing {sub_id} : {sub_metadata}')
-                continue
-            self.parse_response_and_save_data(
-                response=response,
-                sub_metadata=sub_metadata
-            )
-            self.wait_btw_actions()
-
-    def destroy_remote(self):
-        submissions_to_destroy = []
-        for sl_id in self._submissions_to_destroy:
-            submission = self._reddit.submission(sl_id)
-            submissions_to_destroy.append(submission)
-
-        remove_count = len(submissions_to_destroy)
-        removed = 0
-        for submission_to_destroy in submissions_to_destroy:
-            submission_to_destroy.mod.remove()
-            removed += 1
-            print(f'Successfully removed : {submission_to_destroy}, {removed} / {remove_count}')
-            self.wait_btw_actions()
-        pass
-
+    # RUN-LEVEL FUNCTION
     def fetch_and_parse_submissions(self):
         # Fetch remote submission data
         submission_listing_generator = \
@@ -155,6 +121,46 @@ class RedditDataCloner:
         # Store data to class
         self.top_submissions_metadata = top_submissions_metadata
 
+    # RUN-LEVEL FUNCTION
+    def save_data_to_disk(self):
+        submission_count = len(self.top_submissions_metadata)
+        submission_number = 0
+        for sub_id, sub_metadata in self.top_submissions_metadata.items():
+            submission_number += 1
+            url = None
+            if 'url' in sub_metadata:
+                url = sub_metadata['url']
+            if not url:
+                continue  # Skip if missing url
+            print(f'Attempting to process url : {url}, submission {submission_number} / {submission_count}')
+            try:
+                response = requests.get(url=url)
+            except Exception as exc:
+                print(f'Exception encountered processing {sub_id} : {sub_metadata}')
+                continue
+            self.parse_response_and_save_data(
+                response=response,
+                sub_metadata=sub_metadata
+            )
+            self.wait_btw_actions()
+
+    # RUN-LEVEL FUNCTION
+    def destroy_remote(self):
+        submissions_to_destroy = []
+        for sl_id in self._submissions_to_destroy:
+            submission = self._reddit.submission(sl_id)
+            submissions_to_destroy.append(submission)
+
+        remove_count = len(submissions_to_destroy)
+        removed = 0
+        for submission_to_destroy in submissions_to_destroy:
+            submission_to_destroy.mod.remove()
+            removed += 1
+            print(f'Successfully removed : {submission_to_destroy}, {removed} / {remove_count}')
+            self.wait_btw_actions()
+        pass
+
+    # SUB-RUN FUNCTION
     def parse_response_and_save_data(self, response, sub_metadata):
         content, status_code, url = None, None, None
         if hasattr(response, 'status_code'):
@@ -174,6 +180,7 @@ class RedditDataCloner:
                 ext=ext_jpg
             )
 
+    # SUB-RUN FUNCTION
     def save_file_and_update_destroy_metadata(self, response, sub_metadata, ext):
         content = response.content
 
@@ -230,6 +237,7 @@ class RedditDataCloner:
         # Create deletion metadata, save to class to be dumped to disk
         self._submissions_to_destroy.append(sl_id)
 
+    # SUB-RUN FUNCTION
     def wait_btw_actions(self):
         for i in range(self._delay_per_download):
             print(f"Waiting {self._delay_per_download} seconds : {i}")
