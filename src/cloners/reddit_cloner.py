@@ -85,7 +85,7 @@ class RedditDataCloner:
         self._delay_per_action = 3
         self._destroy_remote = False
         self._path_to_reddit_media = None
-        self._submissions_per_request = 10
+        self._submissions_per_request = 1000
         self._reddit = None
         self._submissions_to_destroy = []
         self._subreddit = None
