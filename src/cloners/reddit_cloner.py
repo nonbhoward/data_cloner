@@ -1,6 +1,7 @@
 # Cloner to fetch data from Reddit
 
 # imports, python
+from html.parser import HTMLParser
 from pathlib import Path
 from time import sleep
 import json
@@ -14,6 +15,66 @@ import praw
 from src.managers.config_manager import ConfigManager
 
 
+class MyGifvParser(HTMLParser):
+    def __init__(self, raw_html):
+        super().__init__()
+        self.data = []
+        self.links = []
+        self.raw_html = raw_html.decode()
+        self.feed(self.raw_html)
+        self.parse_links()
+
+    def handle_data(self, data):
+        data = data.strip()
+        if not data:
+            return
+        if 'gifUrl' in data:
+            self.data.append(data)
+            return
+
+    def parse_links(self):
+        for data in self.data:
+            try:
+                d_elements = data.split('\n')
+                content_string = d_elements[5].strip()
+                c_elements = content_string.split(' ')
+                c_elements = [element for element in c_elements if element]
+                content_link = c_elements[1].replace(',', '').replace('\"', '').replace('\'', '')[2:]
+            except Exception as exc:
+                content_link = None
+            if not content_link:
+                continue
+            if content_link not in self.links:
+                self.links.append(content_link)
+
+
+class MyRedParser(HTMLParser):
+    def __init__(self, raw_html):
+        super().__init__()
+        self.data = []
+        self.links = []
+        self.raw_html = raw_html.decode()
+        self.feed(self.raw_html)
+        self.parse_links()
+
+    def handle_data(self, data):
+        data = data.strip()
+        if not data:
+            return
+        if 'context' not in data:
+            return
+        self.data.append(data)
+
+    def parse_links(self):
+        for data in self.data:
+            d_elements = data.split(',')
+            content_string = [data for data in d_elements if 'contentUrl' in data][0]
+            data_link = content_string.split('\"')[3]
+            if data_link in self.links:
+                continue
+            self.links.append(data_link)
+
+
 class RedditDataCloner:
     _ACTIVE = True
     _FOLDER_NAME = 'RedditData'
@@ -21,10 +82,10 @@ class RedditDataCloner:
     def __init__(self, config_manager: ConfigManager):
         print(f'Initializing {self.__class__.__name__}')
         self._config_manager = config_manager
-        self._delay_per_download = 3
+        self._delay_per_action = 3
         self._destroy_remote = False
         self._path_to_reddit_media = None
-        self._submissions_per_request = 1000
+        self._submissions_per_request = 10
         self._reddit = None
         self._submissions_to_destroy = []
         self._subreddit = None
@@ -197,16 +258,44 @@ class RedditDataCloner:
             )
             return  # jpg, gif, png return
 
-        # TODO Process gifv
         special_extensions = ['.gifv']
         if content and url and extension in special_extensions:
             print(f'Special ext encountered at : {url}')
-            return  # gifv return
+            gifv_parser = MyGifvParser(raw_html=content)
+            if not hasattr(gifv_parser, 'links'):
+                return  # Error, attr missing
+            if not gifv_parser.links:
+                return  # Failed, no links found
+            try:
+                response = requests.get(url=gifv_parser.links[0])
+            except Exception as exc:
+                print(f"Request failed for url : {url}")
+                return
+            self.save_file_and_update_destroy_metadata(
+                response=response,
+                sub_metadata=sub_metadata,
+                ext='.gif'
+            )
+            return  # gifv to gif return
 
-        # TODO process red
         if 'gifs' in url and 'watch' in url:
             print(f'Red encountered at : {url}')
-            return  # Non-critical target return
+            red_parser = MyRedParser(raw_html=content)
+            if not hasattr(red_parser, 'links'):
+                return  # Error, attr missing
+            if not red_parser.links:
+                return  # Fail, no links found
+            try:
+                response = requests.get(url=red_parser.links[0])
+            except Exception as exc:
+                print(f"Request failed for url : {url}")
+                return
+            self.save_file_and_update_destroy_metadata(
+                response=response,
+                sub_metadata=sub_metadata,
+                ext='.mp4'
+            )
+            return  # red to mp4 return
 
         # TODO process cat
         if 'https' in url and 'gfycat' in url:
@@ -246,6 +335,7 @@ class RedditDataCloner:
         # Write file
         with open(path_to_write_file, 'wb') as ftw:
             ftw.write(content)
+            print(f'Successfully wrote : {path_to_write_file}')
 
         # Build metadata name
         metadata_file_name = file_name_to_write + '_metadata' + '.json'
@@ -254,6 +344,7 @@ class RedditDataCloner:
         # Write metadata
         with open(path_to_write_metadata, 'w') as mtw:
             json.dump(sub_metadata, mtw)
+            print(f'Successfully wrote : {path_to_write_metadata}')
 
         # Confirm files saved
         all_files = []
@@ -274,8 +365,8 @@ class RedditDataCloner:
 
     # SUB-RUN FUNCTION
     def wait_btw_actions(self):
-        for i in range(self._delay_per_download):
-            print(f"Waiting {self._delay_per_download} seconds : {i}")
+        for i in range(self._delay_per_action):
+            print(f"Waiting {self._delay_per_action} second(s) : {i}")
             sleep(1)
 
 
