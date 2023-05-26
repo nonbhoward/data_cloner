@@ -1,53 +1,35 @@
-A central place to plan project structure in attempt to head-off misunderstandings
+A central place to plan project structure
 
-QUICK REDDIT HACK
-    get top posts
-    extract metadata from top posts
-    iterate over top posts
-        check if metadata in "to delete" collection
-            if top post found in "to delete", send remove
-        attempt to download each, saving to a guid folder
-        write json metadata to same download folder
-        confirm data downloaded
-        update "to delete" metadata with downloaded file's metadata
-
-EXECUTION HIERARCHY AND DATA MANAGEMENT PLAN
-# TODO think through this
+EXECUTION SEQUENCE
 run -> src.main.py
-    config manager initializes, reads config
-        requires nothing
-    metadata manager initializes, reads metadata location from config manager
-        requires config manager
-    data manager initializes, reads data location from config manager
-        requires config manager
-    metadata manager reads/loads previous run metadata
-    data manager reads file directory tree at data location
-    cloner_manager initializes, dynamically imports and loads cloners
-        cache_manager
-        config_manager
-        data_cloner(s)
-    config_manager, access config.yaml key values
-    file_manager, access locally stored files
+    1. config manager initializes, requires nothing
+    2. data manager initializes, requires config manager
+    3. metadata manager initializes, requires config manager
+    4. cloner_manager initializes, requires config & metadata & data manager
+    5. cloner_manager runs
 
-OBJECTS
-    CACHE_MANAGER, object handling management of metadata that persists
-      between runs of the application
-        read cache locations
-        present cache information in a human-readable form
-        write cache locations
+METADATA, thoughts on how metadata should be handled
+    currently considering options :
+        1. continue using json-dict dump/load?
+        2. use a local database?
 
-    CLONER MANAGER, object handling management of cloners and cloners'
-      returned data
+OBJECTS, General descriptions, for specifics look at PLANNED FEATURES
+    CACHE_MANAGER, Handles management of previous-run-metadata that affects
+      program function on successive runs. At the moment that function is
+      not-required.
+        Read cache locations.
+        Present cache information in a human-readable form.
+        Write cache locations.
+
+    CLONER MANAGER, handles import, init, and running of cloners.
+        local and dynamically import the cloners
+        initialize the cloners
         launch the cloners
-        pass data to cache manager
-        pass data to file manager
-        throttle transfers
 
     CONFIG MANAGER, object to avoid having to manually modify config dict
         manage reads-to and writes-from the configuration dict
 
-    DATA CLONER, object to clone some remote, specific functions planned elsewhere.
-      (see "PLANNED FEATURES")
+    DATA CLONER, locates, retrieves, and catalogs the fetching of data.
         remote_specific_cloner_a, for example google_drive_cloner
         remote_specific_cloner_b, for example google_drive_cloner
         ..
@@ -68,6 +50,22 @@ PLANNED FEATURES, aka "specific functions planned elsewhere"
         organize cache for :
             remote/local deltas
     REDDIT
+      Lessons learned after hacky-weekend to be applied to the reddit cloner
+        1. The reddit cloner should possess a generic post-fetching function
+             that mixes hot, top, etc.
+        2. Write a metadata-parser that can be called against objects like
+             a SubmissionListing (which yields Submissions), and other
+             objects.
+        get top posts
+        extract metadata from top posts
+        iterate over top posts
+        check if metadata in "to delete" collection
+            if top post found in "to delete", send remove
+        attempt to download each, saving to a guid folder
+        write json metadata to same download folder
+        confirm data downloaded
+        update "to delete" metadata with downloaded file's metadata
+
         read metadata, IN-PROGRESS
         download data
         confirm downloads

@@ -12,5 +12,5 @@ ClonerManager:
   #     1. Class code located ./src/cloners/
   #     2. Class has a run function
   enabled_cloners:
-    # [GoogleDriveCloner]
-    [RedditDataCloner]
+    GoogleDriveCloner: yes
+    RedditDataCloner: no

@@ -10,16 +10,30 @@ from pathlib import Path
 
 # imports, project
 from src.managers.config_manager import ConfigManager
+from src.managers.data_manager import DataManager
+from src.managers.metadata_manager import MetadataManager
 
 
 class ClonerManager:
-    def __init__(self, config_manager: ConfigManager):
+    def __init__(self, config_manager: ConfigManager,
+                 data_manager: DataManager,
+                 metadata_manager: MetadataManager):
+        """Initialize, dispatch, and manage the cloners, the metadata
+            regarding previous/current program execution, as well as
+            the data that is being cloned.
+
+        :param config_manager: provides access to configuration
+        :param data_manager: provides access to disk read/write
+        :param metadata_manager: provides access to various types of metadata
+        """
         print(f'Initializing {self.__class__.__name__}')
         self._cloners_active = False
         self._initialized_cloners = []
 
         # Assign args to class
         self._config_manager = config_manager
+        self._data_manager = data_manager
+        self._metadata_manager = metadata_manager
 
         # Init non-arg values
         self._cloners = []
@@ -175,7 +189,10 @@ def collect_cloners(content_root: Path,
 
 def is_cloner(f_class: tuple,
               e_cloners: list) -> bool:
-    key, val = f_class[0], f_class[1]
-    if key not in e_cloners:
+    class_name, val = f_class[0], f_class[1]
+    if class_name not in e_cloners:
+        return False
+    class_enabled = e_cloners[class_name]
+    if not class_enabled:
         return False
     return True

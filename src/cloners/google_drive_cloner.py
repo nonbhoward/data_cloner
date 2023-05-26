@@ -74,6 +74,7 @@ class GoogleDriveCloner:
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
+                # FIXME this always seems to fail, delete token.json to resolve
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
@@ -120,6 +121,7 @@ class GoogleDriveCloner:
         :param page_size: int: result count to fetch per request
         """
 
+        results = None
         try:
             results = self.service.files().list(
                 pageSize=page_size,
@@ -128,6 +130,11 @@ class GoogleDriveCloner:
         except Exception as exc:
             # TODO add functionality to allow resume after http errors
             print(f'{exc}')
+
+        if not results:
+            print(f'service.files.list api call failed, possibly due to a '
+                  f'network error')
+            return
 
         if 'files' in results:
             # Iterate through files metadata
