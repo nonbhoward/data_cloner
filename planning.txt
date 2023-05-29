@@ -41,9 +41,9 @@ OBJECTS, General descriptions, for specifics look at PLANNED FEATURES
 
 
 PLANNED FEATURES, aka "specific functions planned elsewhere"
-    authenticate with multiple remotes
-    cache data between runs in a compressed json
-    dispatch cloners asynchronously
+    authenticate with multiple remotes, done
+    write metadata
+    write data
     GOOGLEDRIVE
         read metadata, DONE
         download data
@@ -56,15 +56,6 @@ PLANNED FEATURES, aka "specific functions planned elsewhere"
         2. Write a metadata-parser that can be called against objects like
              a SubmissionListing (which yields Submissions), and other
              objects.
-        get top posts
-        extract metadata from top posts
-        iterate over top posts
-        check if metadata in "to delete" collection
-            if top post found in "to delete", send remove
-        attempt to download each, saving to a guid folder
-        write json metadata to same download folder
-        confirm data downloaded
-        update "to delete" metadata with downloaded file's metadata
 
         read metadata, IN-PROGRESS
         download data
