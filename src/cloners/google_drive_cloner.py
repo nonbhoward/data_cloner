@@ -41,19 +41,27 @@ class GoogleDriveCloner:
     def run(self):
         self.authenticate()
 
-        # 1. (in progress) Get a list of all files on the drive
+        # 1. Get a list of all files on the drive
         while self.next_page_token is not self._NO_MORE_PAGES:
             self.read_drive_metadata(page_size=10)
+            # FIXME, remove this dev line
+            if len(self.drive_metadata) > 10:
+                break
 
-        print(f'Cloner task finished : {self.__class__.__name__}')
-
-        pass
+        # 1a. Download a test file
+        for file_id, file_metadata in self.drive_metadata.items():
+            self.download(
+                file_id=file_id,
+                file_metadata=file_metadata
+            )
         # 2. Get a list of all files backed up locally
         # 3. Comparing the lists, get a list of files to fetch from drive
         # 4. Fetch the files, writing them locally
         # 5. Track bandwidth usage and report it to the cloner manager
         if self.next_page_token is self._NO_MORE_PAGES:
             self.reset()
+
+        print(f'Cloner task finished : {self.__class__.__name__}')
 
     @property
     def active(self):
@@ -95,8 +103,21 @@ class GoogleDriveCloner:
     def cache_refresh(self):
         pass
 
-    def download(self):
-        pass
+    def download(self, file_id: str, file_metadata: dict):
+        """Export the byte_content of a file from the workspace. Note that
+          the api limits the byte_content to 10MiB per export.
+
+        # TODO, are there any files greater than 10MiB on the workspace?
+
+        :param file_id: the id of a file on the remote drive.
+        :param file_metadata: data about the file to export/download.
+        :return: byte content of a file to be written to disk
+        """
+        mime_type = file_metadata['mime_type']
+        byte_content = self.service.files().export(
+            fileId=file_id,
+            mimeType=mime_type
+        )
 
     @property
     def drive_metadata(self) -> dict:
