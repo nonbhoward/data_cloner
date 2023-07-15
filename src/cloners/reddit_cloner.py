@@ -75,7 +75,7 @@ class MyRedParser(HTMLParser):
             self.links.append(data_link)
 
 
-class RedditDataCloner:
+class RedditCloner:
     _ACTIVE = True
     _FOLDER_NAME = 'RedditData'
 
@@ -94,10 +94,15 @@ class RedditDataCloner:
 
         # Check if remote data deletion is enabled
         key = 'destroy_remote'
-        if key in self._config_manager.config:
-            remotes_to_destroy = self._config_manager.config[key]
-            if self.__class__.__name__ in remotes_to_destroy:
-                self._destroy_remote = True
+        if key not in self._config_manager.cloner_manager:
+            return
+
+        remotes_to_destroy = self._config_manager.destroy_remote
+        if self.__class__.__name__ not in remotes_to_destroy:
+            return
+
+        if remotes_to_destroy[self.__class__.__name__]:
+            self._destroy_remote = True
 
     def run(self, destroy=False):
         """The primary action for this class"""

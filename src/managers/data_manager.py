@@ -4,7 +4,7 @@
 from src.managers.config_manager import ConfigManager
 
 
-class DataManager:
+class FileManager:
     def __init__(self, config_manager: ConfigManager):
         self._open_files = dict
 

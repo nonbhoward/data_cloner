@@ -1,16 +1,23 @@
-# Cloner manager specific configuration
+# Configuration regarding the cloner manager
 ClonerManager:
   # The list of classes that will attempt to destroy remote data after download.
   #   Requirements :
   #     1. Class code located at ./src/cloners/
   #     2. Class name also listed under enabled_cloners config.yaml key
   destroy_remote:
-    [RedditDataCloner]
+    RedditCloner: yes
 
   # The list of classes that the cloner manager will initialize and run.
   #   Requirements :
   #     1. Class code located ./src/cloners/
   #     2. Class has a run function
   enabled_cloners:
-    GoogleDriveCloner: yes
-    RedditDataCloner: no
+    GoogleDriveCloner: no
+    RedditCloner: yes
+
+# Configuration regarding the file manager
+FileManager:
+  path_to_file_manager_root: ~/data_cloner_managed_files/
+  extensions:
+    GoogleDriveCloner: /google_drive/
+    RedditCloner: /reddit/

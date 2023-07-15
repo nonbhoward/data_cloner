@@ -3,9 +3,9 @@ A central place to plan project structure
 EXECUTION SEQUENCE
 run -> src.main.py
     1. config manager initializes, requires nothing
-    2. data manager initializes, requires config manager
+    2. file manager initializes, requires config manager
     3. metadata manager initializes, requires config manager
-    4. cloner_manager initializes, requires config & metadata & data manager
+    4. cloner_manager initializes, requires config & metadata & file manager
     5. cloner_manager runs
 
 METADATA, thoughts on how metadata should be handled
@@ -14,7 +14,7 @@ METADATA, thoughts on how metadata should be handled
         2. use a local database?
 
 OBJECTS, General descriptions, for specifics look at PLANNED FEATURES
-    CACHE_MANAGER, Handles management of previous-run-metadata that affects
+    METADATA_MANAGER, Handles management of metadata that affects
       program function on successive runs. At the moment that function is
       not-required.
         Read cache locations.
@@ -27,16 +27,16 @@ OBJECTS, General descriptions, for specifics look at PLANNED FEATURES
         launch the cloners
 
     CONFIG MANAGER, object to avoid having to manually modify config dict
-        manage reads-to and writes-from the configuration dict
+        manage reads-from the configuration dict
 
-    DATA CLONER, locates, retrieves, and catalogs the fetching of data.
+    DATA CLONER, locates, retrieves, and organizes the fetched data.
         remote_specific_cloner_a, for example google_drive_cloner
         remote_specific_cloner_b, for example google_drive_cloner
         ..
         remote_specific_cloner_z, for example google_drive_cloner
 
 
-    FILE MANAGER, object to handle disk read/write activity regarding data,
+    FILE MANAGER, object to handle disk read/write activity regarding local files,
         noting that metadata is handled by the cache manager
 
 

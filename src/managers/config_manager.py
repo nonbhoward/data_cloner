@@ -32,6 +32,20 @@ class ConfigManager:
                                         project_name=project_name)
         self._dotenv = None
 
+    @property
+    def cloner_manager(self, key: str = 'ClonerManager') -> dict:
+        if key not in self._config:
+            print(f'No entry found for key : {key}')
+            return {}
+        return self._config[key]
+
+    @property
+    def file_manager(self, key: str = 'FileManager') -> dict:
+        if key not in self._config:
+            print(f'No entry found for key : {key}')
+            return {}
+        return self._config[key]
+
     @staticmethod
     def read_config(path_to_config='', project_name='') -> dict:
         """Read the configuration file.
@@ -71,15 +85,6 @@ class ConfigManager:
         add_dotenv_to_config(config=yaml_cfg)
 
         return yaml_cfg
-
-    @property
-    def config(self):
-        return self._config
-
-    @config.setter
-    def config(self, value):
-        validate_setter_value(value=value, type_requirement=dict)
-        self._config = value
 
     @property
     def content_root(self) -> Path:

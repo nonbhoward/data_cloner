@@ -10,20 +10,20 @@ from pathlib import Path
 
 # imports, project
 from src.managers.config_manager import ConfigManager
-from src.managers.data_manager import DataManager
+from src.managers.data_manager import FileManager
 from src.managers.metadata_manager import MetadataManager
 
 
 class ClonerManager:
     def __init__(self, config_manager: ConfigManager,
-                 data_manager: DataManager,
+                 file_manager: FileManager,
                  metadata_manager: MetadataManager):
         """Initialize, dispatch, and manage the cloners, the metadata
             regarding previous/current program execution, as well as
             the data that is being cloned.
 
         :param config_manager: provides access to configuration
-        :param data_manager: provides access to disk read/write
+        :param file_manager: provides access to disk read/write
         :param metadata_manager: provides access to various types of metadata
         """
         print(f'Initializing {self.__class__.__name__}')
@@ -32,7 +32,7 @@ class ClonerManager:
 
         # Assign args to class
         self._config_manager = config_manager
-        self._data_manager = data_manager
+        self._data_manager = file_manager
         self._metadata_manager = metadata_manager
 
         # Init non-arg values
